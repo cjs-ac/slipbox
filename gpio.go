@@ -74,7 +74,6 @@ func (pin *GpioPin) Close() bool {
     return false
   }
   // Inform the kernel that we don't want the pin any more.
-  // Inform the kernel that we wish to export the pin.
   file, error := os.Open("/sys/class/gpio/unexport")
   if error != nil {
     return false
