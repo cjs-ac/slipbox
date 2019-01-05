@@ -98,12 +98,12 @@ func (writer *GpioWriter) Open(Number uint8, BitRate uint) bool {
   // Open the pin for writing.
   var pin GpioPin
   if pin.Open(Number, true) == true {
-    Pin = pin
+    writer.Pin = pin
   } else {
     return false
   }
   // Set the baud value.
-  Baud = BitRate
+  writer.Baud = BitRate
   // Set the pin to the default voltage.
   writer.Pin(Write(true))
   return true
@@ -111,20 +111,20 @@ func (writer *GpioWriter) Open(Number uint8, BitRate uint) bool {
 
 func (writer *GpioWriter) WriteByte(Data uint8) {
   // Set up the ticker to tell us when to send a new bit.
-  baudController = time.NewTicker(time.Second / float32(Baud))
+  writer.baudController = time.NewTicker(time.Second / float32(Baud))
   // Set up a bitmask to extract bits from the byte.
   var bitMask byte = 1
   // Keep track of where we are in the byte.
   for bitNumber := -1; bitNumber <= 8; bitNumber++ {
     if bitNumber == -1 {
       // If we haven't started, signal the start of the byte.
-      Pin.Write(false)
+      writer.Pin.Write(false)
     } else if bitNumber == 8 {
       // If we've finished, signal the end of the byte.
-      Pin.Write(true)
+      writer.Pin.Write(true)
     } else {
       // Wait for the next tick.
-      <- baudController.C
+      <- writer.baudController.C
       // Extract the bit and send it.
       writer.Pin.Write(Data & bitMask)
       // Advance the bitmask to the next bit.
@@ -132,7 +132,7 @@ func (writer *GpioWriter) WriteByte(Data uint8) {
     }
   }
   // Stop the ticker.
-  baudController.Stop()
+  writer.baudController.Stop()
   return
 }
 
@@ -153,23 +153,67 @@ func (writer *GpioWriter) WriteBytes(Data []uint8) {
     rawBits = append(rawBits, true)
   }
   // Set up the ticker to tell us when to send a new bit.
-  baudController = time.NewTicker(time.Second / float32(Baud))
+  writer.baudController = time.NewTicker(time.Second / float32(Baud))
   // Send the bits.
   var bitsSent int64
   for bitNumber := 0; bitNumber < len(rawBits); bitNumber++ {
     // Wait for the next tick.
-    <- baudController.C
+    <- writer.baudController.C
     // Send the bit.
     if writer.Pin.Write(rawBits[bitNumber]) == true {
       bitsSent++
     }
   }
   // Stop the ticker.
-  baudController.Stop()
+  writer.baudController.Stop()
   // Return the number of bytes sent.
   return bitsSent / 10
 }
 
 func (writer *GpioWriter) Close() bool {
   return writer.Pin.close()
+}
+
+// gpio.GpioReader: provides support for reading bytes from pins.
+
+type GpioReader struct {
+  Pin GpioPin
+  Baud uint
+  baudController Ticker
+}
+
+func (reader *GpioReader) Open(Number uint8, BitRate uint) bool {
+  // Open the pin for reading.
+  var pin GpioPin
+  if pin.Open(Number, false) == true {
+    reader.Pin = pin
+  } else {
+    return false
+  }
+  // Set the baud value.
+  reader.Baud = BitRate
+  return true
+}
+
+func (reader *GpioReader) ReadByte() byte {
+  // Set up the ticker to tell us when to check for bits.
+  reader.baudController = time.NewTicker(time.Second / float32(Baud))
+  // Wait for the start signal.
+  currentValue := true
+  for ; currentValue == true {
+    currentValue <- reader.Pin.Read()
+  }
+  // Read values.
+  var output byte
+  for i := 1; i <= 256; i = math.Pow(i, 2) {
+    currentValue <- reader.Pin.Read()
+    if currentValue == true {
+      output += i
+    }
+  }
+  return output
+}
+
+func (reader *GpioReader) Close() bool {
+  return reader.Pin.Close()
 }
