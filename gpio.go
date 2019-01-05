@@ -1,6 +1,7 @@
 package gpio
 
 import (
+  "math"
   "os"
   "strconv"
   "time"
