@@ -202,3 +202,15 @@ var CommandPrintRaster = Command{
   DataLengthRange: {5, 4294967296},
   Description: "Prints raster data at 203.2 dpi. MSB at left; LSB at right. Data bytes are xL, xH, yL, yH, then pixel bytes. Image size specified by x = xL+xH×256, y = yL+yH×256."
 }
+
+var CommandInitialise = Command{
+  Name: "Initialise the printer",
+  ControlSequence: {27, 64},
+  Description: "Initialises the printer. Print buffer is cleared, parameters reset to defaults, user-defined characters cleared, DIP switch settings not checked, receive buffer not cleared."
+}
+
+var CommandStatus = Command{
+  Name: "Transmit paper sensor status",
+  ControlSequence: {27, 118},
+  Description: "Returns one byte. Bit 0: represents online/offline; Bit 2: represents paper status; Bit 3: Whether voltage exceeds 9.5V; Bit 6: Whether temperature exceeds 60 degC."
+}
