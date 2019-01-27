@@ -5,6 +5,7 @@ import (
   "math"
   "strconv"
   "fmt"
+  "strings"
 )
 
 func PrintPbmCFromFile(filename string) {
@@ -13,7 +14,7 @@ func PrintPbmCFromFile(filename string) {
     panic(error)
   }
   if !(rawbytes[0] == 80 && rawbytes[1] == 52) {
-    fmt.Println("ERROR: " + filename + " is not a valid uncompressed PBM file.")
+    fmt.Println("ERROR: " + filename + " is not a valid compressed PBM file.")
     return
   }
   var widthString, heightString string
@@ -58,11 +59,28 @@ func PrintPbmCFromFile(filename string) {
   var outputBytes []byte = []byte{29, 118, 48, 0}
   outputBytes = append(outputBytes, xL, xH, yL, yH)
   outputBytes = append(outputBytes, dataBytes...)
-  fmt.Println(outputBytes)
+  SendCommand(CommandSetLeftMargin, []byte{0, 0})
   SendBytes(outputBytes)
 }
 
+func PrintPlainText(data string) {
+  var words []string = strings.Split(data, " ")
+  var currentline string = ""
+  for i := 0; i < len(words); i++ {
+    if len(currentline) + len(words[i]) > 32 {
+      SendBytes([]byte(currentline))
+      currentline = words[i]
+    } else {
+      currentline += words[i]
+      if len(currentline) < 32 {
+        currentline += " "
+      }
+    }
+  }
+}
+
 func main() {
+  SendBytes([]byte{29, 76, 0, 0})
   //SendCommand(CommandTestPage, []byte{})
   PrintPbmCFromFile("/home/cjs/latex.pbm")
   return

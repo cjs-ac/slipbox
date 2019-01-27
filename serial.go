@@ -5,11 +5,11 @@ import (
 )
 
 func SendString(Data string) {
-  ioutil.WriteFile("/dev/ttyS0", []byte(Data), 777)
+  ioutil.WriteFile("/dev/ttyS0", []byte(Data), 660)
 }
 
 func SendBytes(Data []byte) {
-  ioutil.WriteFile("/dev/ttyS0", Data, 777)
+  ioutil.WriteFile("/dev/ttyS0", Data, 660)
 }
 
 func SendCommand(command Command, data []byte) {
